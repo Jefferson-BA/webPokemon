@@ -8,26 +8,39 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// 1. Obtener personaje con la URL perfectamente limpia
 async function getCharacter(id: string): Promise<Character | null> {
-  const res = await fetch(`https://pokeapi.co/../https://rickandmortyapi.com/api/character/${id}`, {
-    next: { revalidate: 864000 } // Revalida cada 10 días (ISR)
-  });
-  
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`https://rickandmortyapi.com/api/character/${id}`, {
+      next: { revalidate: 864000 } // Revalida cada 10 días (ISR)
+    });
+    
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error obteniendo personaje:", error);
+    return null;
+  }
 }
 
-// Genera parámetros estáticos para producción (SSG por Id) para los primeros 20 registros
+// 2. Generar parámetros estáticos limpios para SSG
 export async function generateStaticParams() {
-  const res = await fetch('https://rickandmortyapi.com/api/character');
-  const data: APIResponse = await res.json();
-  
-  return data.results.map((char) => ({
-    id: char.id.toString(),
-  }));
+  try {
+    const res = await fetch('https://rickandmortyapi.com/api/character');
+    if (!res.ok) return [];
+    
+    const data: APIResponse = await res.json();
+    
+    return data.results.map((char) => ({
+      id: char.id.toString(),
+    }));
+  } catch (error) {
+    console.error("Error generando parámetros estáticos:", error);
+    return [];
+  }
 }
 
-// Metadata dinámica
+// 3. Metadata dinámica corregida
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const char = await getCharacter(id);
